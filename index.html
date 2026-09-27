@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Piano Timbres</title>
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --bg-surface: #1e1e1e;
+            --bg-surface-hover: #2c2c2c;
+            --text-main: #e0e0e0;
+            --text-muted: #9e9e9e;
+            --accent: #00E5FF;
+            --accent-dim: rgba(0, 229, 255, 0.1);
+            --star-active: #FFD700;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            overscroll-behavior-y: none;
+        }
+
+        /* Header & Search */
+        header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(18, 18, 18, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 16px;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            padding-left: 40px;
+            border-radius: 12px;
+            border: 1px solid #444;
+            background-color: var(--bg-surface);
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* Categories (Horizontal Scroll) */
+        .categories-wrapper {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding-top: 12px;
+            padding-bottom: 4px;
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .categories-wrapper::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        .chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background-color: var(--bg-surface);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+            border: 1px solid #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chip.active {
+            background-color: var(--accent-dim);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .chip.fav-chip {
+            color: var(--star-active);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+        .chip.fav-chip.active {
+            background-color: rgba(255, 215, 0, 0.1);
+            border-color: var(--star-active);
+        }
+
+        /* List container */
+        main {
+            padding: 12px;
+            padding-bottom: 40px;
+        }
+
+        .tone-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tone-item {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-surface);
+            padding: 16px;
+            border-radius: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .tone-item:active {
+            background-color: var(--bg-surface-hover);
+        }
+
+        .tone-id {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--accent);
+            min-width: 65px;
+            font-family: monospace;
+            letter-spacing: -1px;
+        }
+
+        .tone-info {
+            flex-grow: 1;
+            padding-left: 12px;
+        }
+
+        .tone-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .tone-category {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .fav-btn {
+            background: none;
+            border: none;
+            color: #444;
+            font-size: 1.5rem;
+            padding: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, color 0.2s;
+        }
+
+        .fav-btn.active {
+            color: var(--star-active);
+        }
+        
+        .fav-btn:active {
+            transform: scale(1.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-top">
+            <h1>🎹 Timbres</h1>
+        </div>
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar por número o nombre..." autocomplete="off">
+        </div>
+        <div class="categories-wrapper" id="categoriesContainer">
+            <!-- Los chips se generan por JS -->
+        </div>
+    </header>
+
+    <main>
+        <div class="tone-list" id="toneList">
+            <!-- La lista se genera por JS -->
+        </div>
+    </main>
+
+    <script>
+        // 1. Datos procesados y corregidos (Saltos OCR arreglados y números ordenados)
+        const rawTones = [
+            "000 Acoustic Grand Piano", "001 Bright Acoustic Piano", "002 Electric Grand Piano", "003 Honky-Tonk Piano", "004 Rhodes Piano", "005 Chorused Piano", "006 Harpsichord", "007 Clavichord",
+            "008 Celesta", "009 Glockenspiel", "010 Music box", "011 Vibraphone", "012 Marimba", "013 Xylophone", "014 Tubular Bells", "015 Dulcimer",
+            "016 Hammond Organ", "017 Percussive Organ", "018 Rock Organ", "019 Church Organ", "020 Reed Organ", "021 Accordian", "022 Harmonica", "023 Tango Accordian",
+            "024 Acoustic Guitar (nylon)", "025 Acoustic Guitar (steel)", "026 Electric Guitar (jazz)", "027 Electric Guitar (clear)", "028 Electric Guitar (muted)", "029 Overdriven Guitar", "030 Distortion Guitar", "031 Guitar Harmonics",
+            "032 Acoustic Bass", "033 Electric Bass(finger)", "034 Electric Bass (pick)", "035 Fretless Bass", "036 Slap Bass", "037 Slap Bass 2", "038 Synth Bass 1", "039 Synth Bass 2",
+            "040 Violin", "041 Viola", "042 Cello", "043 Contrabass", "044 Tremolo Strings", "045 Pizzicato Strings", "046 Orchestral Harp", "047 Timpani",
+            "048 String Ensemble 1", "049 String Ensemble 2", "050 Synth Strings 1", "051 Synth Strings 2", "052 Choir Aahs", "053 Voice Oohs", "054 Synth Voice", "055 Orchestra Hit",
+            "056 Trumpet", "057 Trombone", "058 Tuba", "059 Muted Trumpet", "060 French Horn", "061 Brass Section", "062 Synth Brass 1", "063 Synth Brass 2",
+            "064 Soprano Sax", "065 Alto Sax", "066 Tenor Sax", "067 Baritone Sax", "068 Oboe", "069 English Horn", "070 Bassoon", "071 Clarinet",
+            "072 Piccolo", "073 Flute", "074 Recorder", "075 Pan Flute", "076 Bottle Blow", "077 Shakuhachi", "078 Whistle", "079 Ocarina",
+            "080 Lead 1 (square)", "081 Lead 2 (sawtooth)", "082 Lead 3 (caliope lead)", "083 Lead 4 (chiff lead)", "084 Lead 5 (charang)", "085 Lead 6 (voice)", "086 Lead 7 (fifths)", "087 Lead 8 (bass lead)",
+            "088 Pad 1 (new age)", "089 Pad 2 (warm)", "090 Pad 3 (polysynth)", "091 Pad 4 (choir)", "092 Pad 5 (bowed)", "093 Pad 6 (metallic)", "094 Pad 7 (halo)", "095 Pad 8 (sweep)",
+            "096 FX 1 (rain)", "097 FX 2 (soundtrack)", "098 FX 3 (crystal)", "099 FX 4 (atmosphere)", "100 FX 5 (brightness)", "101 FX 6 (goblins)", "102 FX 7 (echoes)", "103 FX 8 (sci-fi)",
+            "104 Sitar", "105 Banjo", "106 Shamisen", "107 Koto", "108 Kalimba", "109 Bagpipe", "110 Fiddle", "111 Shanai",
+            "112 Tinkle Bell", "113 Agogo", "114 Steel Drums", "115 Woodblock", "116 Taiko Drum", "117 Melodic Tom", "118 Synth Drum", "119 Reverse Cymbal",
+            "128 Percussion", "129 Rhythm electric Piano", "130 Baritone Xylophone", "131 Clean Piano", "132 Bright Dulcimer", "133 Rhythm Grand Piano", "134 Traditional Piano", "135 Aluminium jean", "136 Rock Grand Piano", "137 Electronic organ", "138 Psychedelic electronic", "139 Water jean",
+            "140 Bright Guitar", "141 Orchestra piccolo", "142 Heavy metal guitar", "143 Crystal quitar", "144 Queer electric Piano", "145 Bright bass", "146 Rock Electric Bass", "147 Rhythm Electric Bass", "148 Psychedelic Bass", "149 Heavy metal bass",
+            "150 Magic electronic", "151 Bright violin", "152 Atonic violin", "153 Heavy bass orchestra", "154 Synth clarinet", "155 Interactive Lead", "156 Orchestral keyboard", "157 Bagpipes", "158 Suona", "159 Pipa",
+            "160 Church Piano", "161 Church electric Piano", "162 Synth Piano", "163 Baritone Piano", "164 Piano PAD", "165 String Piano", "166 Metal Piano", "167 Light rhythm Piano", "168 Electric Piano Pad", "169 Classical piano",
+            "170 Organ Guitar", "171 Electric Guitar", "172 Synthesis Nylon Guitar", "173 Synth Electronic Guitar", "174 Bright Clean Guitar", "175 Orchestra Guitar", "176 Psychedelic Guitar", "177 Bright organ", "178 Pick organ",
+            "179 Synth accordion", "180 Bright Violin", "181 Stringed violin", "182 Trill violin", "183 Electronic violin", "184 Large violin", "185 Rhythm Orchestra", "186 Pizzicato Violin", "187 Pizzicato Ensemble 1", "188 Pizzicato Ensemble 2", "189 Percussion band",
+            "190 Baritone Synth Contrabass", "191 Bass Flute", "192 Distortion Contrabass", "193 Contrabass Lead", "194 Violin Lead", "195 Cello Lead", "196 Pizzicato rhythm", "197 High Harp", "198 Harp ensemble", "199 Synth Harp",
+            "200 Baritone Trumpet", "201 Trumpet Ensemble", "202 rhythm Trumpet", "203 high Trumpet", "204 Synth Trumpet", "205 Bass Trombone", "206 Trombone Ensemble", "207 rhythm Trombone", "208 high Trombone", "209 baritone Trombone", "210 Synth Trombone", "211 Violin French Horn", "212 French Horn ensemble", "213 Electronic French Horn", "214 Synth French Horn", "215 Psychedelic Synth Brass", "216 Distortion Synth Brass",
+            "217 Vibraphone Synth Brass", "218 Rock Synth Brass", "219 Synth Muted Trumpet", "220 Soprano Sax ensemble", "221 rhythm Soprano Sax", "222 Synth Soprano Sax", "223 National Sax", "224 Metal Sax", "225 Baritone Sax ensemble", "226 Crystal Sax", "227 Soft Baritone Sax", "228 Synth Baritone Sax", "229 Heavy metal Sax",
+            "230 Church Oboe", "231 Oboe ensemble", "232 Bass Oboe", "233 Bright Oboe", "234 distortio oboe", "235 English Horn ensemble", "236 Pizzicato English Horn", "237 Diplophonia English Horn", "238 Bright English Horn", "239 Synth English Horn",
+            "240 Psychedelic Synth Lead", "241 Vibraphone Synth Lead", "242 Marimba Synth Lead", "243 Metal FX", "244 Electronic FX", "245 Electronic String Ensemble",
+            "246 Wind FX", "247 Clarinet FX", "248 Organ FX", "249 Crystal FX", "250 Synth Shamisen", "251 Electronic Shamisen", "252 Bright Sitar", "253 Whistle Accord", "254 rhythm Nation", "255 Bright Koto", "256 Koto Lead", "257 Diplophonia Koto", "258 Baritone Koto", "259 Svnth Koto",
+            "260 Environmental Lead", "261 Metal Lead", "262 Orchestra Lead", "263 Glockenspiel Lead", "264 Bass Lead", "265 Fifths Lead", "266 Wind Lead", "267 Atmosphere Lead", "268 Sharp Lead", "269 Bright Lead",
+            "270 East Nation Pad", "271 Atmosphere Pad", "272 Electric bass Pad", "273 Electric Piano Pad", "274 Clean Guitar Pad", "275 Western Pad", "276 Sci-fi Pad", "277 Metal Sci-fi Pad", "278 Clarinet Pad", "279 Electronic dance Pad",
+            "280 Double Kalimba", "281 Bright Kalimba", "282 Crystal Kalimba", "283 Synth Kalimba", "284 Electronic Bagpipe", "285 Wind Bagpipe", "286 high Bagpipe", "287 Bright Bagpipe", "288 Orchestra Bagpipe", "289 Baritone Bagpipe",
+            "290 Environmental Shanai", "291 Baritone Shanai", "292 Tenor Shanai", "293 high Shanai", "294 Synth Shanai", "295 Bright Steel Drums", "296 Steel Drums Lead", "297 Lyric Steel Drums", "298 Orchestra Steel Drums", "299 Synth Steel Drums",
+            "300 Hit Soprano Sax", "301 Hit Alto Sax", "302 Hit Tenor Sax", "303 Hit Baritone Sax", "304 Hit Oboe",
+            "305 Rhythm electric Piano", "306 Baritone Xylophone", "307 Clean Piano", "308 Bright Dulcimer", "309 Rhythm Grand Piano", "310 Rhythm Accordian", "311 Marimba Harp", "312 Synth Xylophone", "313 Psychedelic Jazz Guitar", "314 Rhythm Electric Guitar",
+            "315 Baritone Piccolo", "316 Pan Flute Pad", "317 Soft Pad", "318 Fierce Organ", "319 Fantasy Clarinet", "320 Bright Rhythm", "321 Synth Brass Ensemble", "322 Electronic Xylophone", "323 Atmosphere Pizzicato", "324 Rhythm Clarinet", "325 Bright Dulcimer", "326 Double British pipe", "327 Bright Bassoon", "328 Electronic Synth Bassoon", "329 Rock Wind",
+            "330 Synthetic effect wind1", "331 Synthetic effect wind2", "332 Synthetic effect wind3", "333 Synthetic effect wind4", "334 Synthetic Fiddle", "335 Special Echo FX", "336 Electronic Organ Lead", "337 Church Organ Lead", "338 Science Fiction Classic", "339 Electronic Bagpipe", "340 String Ensemble Pad", "341 Electronic wind Pad", "342 Organ Electric Guitar", "343 Jazz Electric Piano", "344 Rock Timpani", "345 Fantasy Atmosphere", "346 Heavy metals Pad", "347 Bright clavichord", "348 Noise Lead", "349 Classical Electronic",
+            "350 Rock piano", "351 Dynamic piano", "352 Rock Clavichord", "353 Baritone Celesta", "354 Magic Metallophone", "355 Heavy metal Glockenspiels", "356 Digital Organ", "357 Clear Organ", "358 Baritone Organ", "359 Reed Synthesizer", "360 Reed Lead", "361 Metal Twelve String Guitar", "362 Magic Guitar", "363 Diplophonia Guitar", "364 Regge Guitar", "365 Hawaii Guitar", "366 Campus Jazz Guitar", "367 Hall electric guitar", "368 Slap quitar", "369 Digital synthetic quitar", "370 Dead nuclear guitar", "371 Heavy bass electric guitar", "372 Bright jazz guitar", "373 Modern electric quitar", "374 Solo electric quitar", "375 Bar electric quitar", "376 Sax electric guitar", "377 uitar noise", "378 Electric quitar reverb", "379 Dynamic guitar",
+            "380 The bass", "381 Bright bass", "382 Heavy bass", "383 Magic bass", "384 The bass band", "385 National bass", "386 The bass strings", "387 British pipe bass", "388 East bass", "389 Traditional bass",
+            "390 Fantasy violin", "391 Solo Violin", "392 Distortion violin", "393 Heavy rock Viola", "394 Magic Cello", "395 Jumping Cello", "396 Electronic hook string", "397 Mechanical hook", "398 Pizzicato synthesizer", "399 Heavy pizzicato rhythm", "400 Fast Harp", "401 Heavy rock Harp", "402 Large electronic drum", "403 Magic timpani", "404 Oriental timpañi", "405 Fantasy strings", "406 Solo synthesizer", "407 Distorted ensemble", "408 Heavy rock ensemble", "409 Magic ensemble", "410 Jump syn String Ensemble", "411 Electronic chorus ah", "412 Electronic chorus oh", "413 Chorus synthesizer", "414 Heavy rhythm syn voice", "415 Digital voice", "416 Music vocal ensemble", "417 Magic Ensemble", "418 Vocal percussion ensemble", "419 Oriental synthetic voice",
+            "420 Dynamic trumpet", "421 Heavy rock trumpet", "422 Traditional Trombone", "423 Magic Trombone", "424 Heavy metal Tuba", "425 Digital Tuba", "426 Clear syn Tuba", "427 Bass France", "428 Fantasy France", "429 Solo copper pipe", "430 Distortion syn tube", "431 Heavy rock Sax", "432 Sax magic", "433 Jump Sax", "434 Electronic tenor Sax", "435 Mechanical Sax", "436 Baritone Sax synthesizer", "437 Heavy rhythm Alto Sax", "438 Baritone Sax", "439 Solo baritone Sax", "440 Distortion oboe", "441 Heavy rock Oboe", "442 Magic British tube", "443 Jump British tube", "444 Electronic bar", "445 Mechanical bar", "446 Dynamic clarinet", "447 Heavy rock clarinet", "448 Traditional Piccolo", "449 Magic Piccolo", "450 Heavy metal flute", "451 Digital flute", "452 Synthesis voiceless clari", "453 Baritone Panpipe", "454 Dynamic ruler eight", "455 Heavy rock lead", "456 Magic lead", "457 Magic voice synthesizer", "458 Synthesis heavy metals", "459 Digital Synth lead",
+            "460 Wooden Marimba", "461 Wooden Bells", "462 Wooden Dulcimer", "463 Wooden Hammond", "464 Wooden Percussive", "465 Wooden Rock Organ", "466 Wooden Church Örgan", "467 Wooden Reed Organ", "468 Wooden Accordian", "469 Wooden Harmonica", "470 Wooden Tango Accordian", "471 Wooden Guitar nylon", "472 Wooden Guitar steel", "473 Wooden Guitar jazz", "474 Wooden Guitar muted", "475 Wooden Synth Bass", "476 Wooden Electronic Bass", "477 Wooden Violin", "478 Wooden Viola", "479 Wooden Cello", "480 Wooden Contrabass", "481 Wooden Tremolo Strings", "482 Wooden Pizzicato Strings", "483 Wooden Timpani", "484 Wooden String Ensemble 1", "485 Wooden String Ensemble 2", "486 Wooden Synth Strings 1", "487 Wooden Synth Strings 2", "488 Wooden Aahs", "489 Wooden Oohs",
+            "490 Hit Synth Voice", "491 Hit Orchestra synthesizer", "492 Hit Trumpet", "493 Hit Trombone", "494 Hit Tuba", "495 Hit Muted Trumpet", "496 Hit French Horn", "497 Hit Brass Section", "498 Hit Synth Brass 1", "499 Hit Synth Brass 2"
+        ];
+
+        // 2. Definición de Categorías por rangos numéricos
+        const categoryGroups = [
+            { id: 'all', name: 'Todos' },
+            { id: 'favs', name: '⭐ Favoritos' },
+            { id: 'piano', name: 'Pianos & Teclas', ranges: [[0,7], [16,23], [131,137], [160,169], [305,310], [350,359], [463,470]] },
+            { id: 'guitar', name: 'Guitarras & Bajos', ranges: [[24,39], [140,149], [170,178], [313,314], [361,389], [471,476]] },
+            { id: 'strings', name: 'Cuerdas & Coros', ranges: [[40,55], [151,153], [180,199], [340,340], [390,419], [477,489]] },
+            { id: 'brass', name: 'Vientos & Bronces', ranges: [[56,79], [154,154], [200,239], [315,315], [319,334], [420,459]] },
+            { id: 'synth', name: 'Sintetizadores & FX', ranges: [[80,103], [240,245], [246,279], [316,318], [335,349]] },
+            { id: 'perc', name: 'Percusión & Étnico', ranges: [[8,15], [104,128], [130,130], [280,304], [311,312], [460,462], [490,499]] }
+        ];
+
+        // 3. Estructurar y Parsear Datos
+        let tonesData = [];
+        rawTones.forEach(str => {
+            const id = str.substring(0, 3);
+            const name = str.substring(4).trim();
+            const idNum = parseInt(id, 10);
+            
+            // Asignar categoría principal
+            let catName = "Extended Synth";
+            for (let i = 2; i < categoryGroups.length; i++) {
+                const grp = categoryGroups[i];
+                if (grp.ranges.some(r => idNum >= r[0] && idNum <= r[1])) {
+                    catName = grp.name;
+                    break;
+                }
+            }
+
+            tonesData.push({ id, name, category: catName, idNum });
+        });
+
+        // 4. Estado de la App
+        let favorites = JSON.parse(localStorage.getItem('piano_favs')) || [];
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        // 5. Referencias DOM
+        const toneListEl = document.getElementById('toneList');
+        const searchInput = document.getElementById('searchInput');
+        const categoriesContainer = document.getElementById('categoriesContainer');
+
+        // 6. Funciones Principales
+        function toggleFavorite(id) {
+            if (favorites.includes(id)) {
+                favorites = favorites.filter(favId => favId !== id);
+            } else {
+                favorites.push(id);
+            }
+            localStorage.setItem('piano_favs', JSON.stringify(favorites));
+            renderList();
+        }
+
+        function renderCategories() {
+            categoriesContainer.innerHTML = categoryGroups.map(cat => `
+                <div class="chip ${cat.id === 'favs' ? 'fav-chip' : ''} ${currentFilter === cat.id ? 'active' : ''}" 
+                     onclick="setFilter('${cat.id}')">
+                    ${cat.name}
+                </div>
+            `).join('');
+        }
+
+        function setFilter(catId) {
+            currentFilter = catId;
+            renderCategories();
+            renderList();
+        }
+
+        function renderList() {
+            let filtered = tonesData.filter(tone => {
+                // Filtro de Búsqueda
+                const searchMatch = tone.id.includes(currentSearch) || 
+                                    tone.name.toLowerCase().includes(currentSearch.toLowerCase());
+                if (!searchMatch) return false;
+
+                // Filtro de Categoría
+                if (currentFilter === 'all') return true;
+                if (currentFilter === 'favs') return favorites.includes(tone.id);
+                
+                const catObj = categoryGroups.find(c => c.id === currentFilter);
+                if (catObj && catObj.name === tone.category) return true;
+                
+                return false;
+            });
+
+            // Si estamos en "Todos", ordenar para que los favoritos salgan primero
+            if (currentFilter === 'all' && currentSearch === '') {
+                filtered.sort((a, b) => {
+                    const aFav = favorites.includes(a.id);
+                    const bFav = favorites.includes(b.id);
+                    if (aFav && !bFav) return -1;
+                    if (!aFav && bFav) return 1;
+                    return a.idNum - b.idNum;
+                });
+            }
+
+            if (filtered.length === 0) {
+                toneListEl.innerHTML = `<div class="empty-state">No se encontraron timbres.</div>`;
+                return;
+            }
+
+            toneListEl.innerHTML = filtered.map(tone => `
+                <div class="tone-item">
+                    <div class="tone-id">${tone.id}</div>
+                    <div class="tone-info">
+                        <div class="tone-name">${tone.name}</div>
+                        <div class="tone-category">${tone.category}</div>
+                    </div>
+                    <button class="fav-btn ${favorites.includes(tone.id) ? 'active' : ''}" 
+                            onclick="toggleFavorite('${tone.id}')">
+                        ${favorites.includes(tone.id) ? '★' : '☆'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // 7. Event Listeners
+        searchInput.addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            renderList();
+        });
+
+        // Inicializar
+        renderCategories();
+        renderList();
+    </script>
+</body>
+</html>
